@@ -1,0 +1,176 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rock Paper Scissors</title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <div class="game-container">
+
+        <h1>✊ Rock Paper Scissors ✌️</h1>
+        <p class="subtitle">Choose your move and challenge the computer!</p>
+
+        <div class="battle">
+            <div class="player">
+                <h2>You</h2>
+                <div class="hand" id="user-hand">
+                    🤜
+                </div>
+                <p id="user-choice">Ready?</p>
+            </div>
+
+            <div class="vs">VS</div>
+
+            <div class="player">
+                <h2>Computer</h2>
+                <div class="hand" id="computer-hand">
+                    🤖
+                </div>
+                <p id="computer-choice">Waiting...</p>
+            </div>
+        </div>
+
+        <h2 class="choose-title">Choose Your Move</h2>
+
+        <form id="game-form">
+            <div class="choices">
+                <button type="button" class="choice"
+                        data-choice="rock">
+                    🪨
+                    <span>Rock</span>
+                </button>
+
+                <button type="button" class="choice"
+                        data-choice="paper">
+                    📄
+                    <span>Paper</span>
+                </button>
+
+                <button type="button" class="choice"
+                        data-choice="scissor">
+                    ✂️
+                    <span>Scissors</span>
+                </button>
+            </div>
+        </form>
+
+        <div class="result" id="result" aria-live="polite">
+            Make your first move!
+        </div>
+
+        <div class="scoreboard">
+            <div>
+                <span id="wins">0</span>
+                <p>Your Wins</p>
+            </div>
+            <div>
+                <span id="draws">0</span>
+                <p>Draws</p>
+            </div>
+            <div>
+                <span id="losses">0</span>
+                <p>Computer Wins</p>
+            </div>
+        </div>
+
+        <button type="button" id="reset" class="reset-button">
+            🔄 Reset Score
+        </button>
+
+    </div>
+
+    <script>
+        const buttons = document.querySelectorAll(".choice");
+
+        const handEmojis = {
+            rock: "✊",
+            paper: "✋",
+            scissor: "✌️"
+        };
+
+        let wins = 0;
+        let draws = 0;
+        let losses = 0;
+
+        buttons.forEach(button => {
+            button.addEventListener("click", async () => {
+                const userChoice = button.dataset.choice;
+
+                document.getElementById("result").textContent =
+                    "Computer is choosing...";
+
+                try {
+                    const response = await fetch("/play", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            choice: userChoice
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(data.error || "Game failed");
+                    }
+
+                    document.getElementById("user-hand").textContent =
+                        handEmojis[data.user];
+
+                    document.getElementById("computer-hand").textContent =
+                        handEmojis[data.computer];
+
+                    document.getElementById("user-choice").textContent =
+                        data.user.toUpperCase();
+
+                    document.getElementById("computer-choice").textContent =
+                        data.computer.toUpperCase();
+
+                    const result = document.getElementById("result");
+                    result.textContent = data.result;
+                    result.className = "result " + data.status;
+
+                    if (data.status === "win") wins++;
+                    else if (data.status === "draw") draws++;
+                    else losses++;
+
+                    document.getElementById("wins").textContent = wins;
+                    document.getElementById("draws").textContent = draws;
+                    document.getElementById("losses").textContent = losses;
+
+                } catch (error) {
+                    document.getElementById("result").textContent =
+                        "Error: " + error.message;
+                }
+            });
+        });
+
+        document.getElementById("reset").addEventListener("click", () => {
+            wins = 0;
+            draws = 0;
+            losses = 0;
+
+            document.getElementById("wins").textContent = 0;
+            document.getElementById("draws").textContent = 0;
+            document.getElementById("losses").textContent = 0;
+
+            document.getElementById("user-hand").textContent = "🤜";
+            document.getElementById("computer-hand").textContent = "🤖";
+            document.getElementById("user-choice").textContent = "Ready?";
+            document.getElementById("computer-choice").textContent =
+                "Waiting...";
+
+            const result = document.getElementById("result");
+            result.textContent = "Make your first move!";
+            result.className = "result";
+        });
+    </script>
+</body>
+</html>
